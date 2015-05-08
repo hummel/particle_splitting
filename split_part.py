@@ -10,130 +10,130 @@ import h5py
 
 
 def select_region(low_res, header, rsplit, nnew):
-	pos = low_res['Coordinates']
-	dens = low_res['Density']
-	time = header.attrs['Time']
-	hubble = header.attrs['HubbleParam']
-	# Center refinement on highest density particle
-	center = pos[dens[:].argmax()]
-	x = pos[:,0] - center[0]
-	y = pos[:,1] - center[1]
-	z = pos[:,2] - center[2]
-	# Calculate distance from center in physical parsecs
-	r = np.sqrt(x*x + y*y + z*z) / hubble
-	to_refine = np.where(r <= rsplit)[0] #indices of particles to refine
-	print to_refine.size, 'particles to refine.'
-	return to_refine
+    pos = low_res['Coordinates']
+    dens = low_res['Density']
+    time = header.attrs['Time']
+    hubble = header.attrs['HubbleParam']
+    # Center refinement on highest density particle
+    center = pos[dens[:].argmax()]
+    x = pos[:,0] - center[0]
+    y = pos[:,1] - center[1]
+    z = pos[:,2] - center[2]
+    # Calculate distance from center in physical parsecs
+    r = np.sqrt(x*x + y*y + z*z) / hubble
+    to_refine = np.where(r <= rsplit)[0] #indices of particles to refine
+    print to_refine.size, 'particles to refine.'
+    return to_refine
 
 def distribute_positions(low_res, hi_res, refine_idx, nnew):
-	'''
-	Randomly distribute split particles within smoothing kernel
-	of unsplit particle, then adjust smoothing length accordingly.
-	'''
-	pos = low_res['Coordinates'].value
-	# Duplicate base position for randomizing
-	pos_new = np.repeat(pos[refine_idx], nnew-1, axis=0)
-	# randomize position within smoothing kernel of each particle
-	hsml = low_res['SmoothingLength'].value
-	delta = np.random.rand(refine_idx.size*(nnew-1), 3)
-	delta *=2; delta -=1 #convert random sample from (0,1) to (-1,1)
-	delta = delta * np.repeat(hsml[refine_idx], nnew-1)[:, np.newaxis]
-	pos_new = pos_new + delta
-	# Now, randomize original particle position.
-	delta = np.random.rand(refine_idx.size, 3)
-	delta *=2; delta -=1 #convert random sample from (0,1) to (-1,1)
-	delta = delta * hsml[refine_idx, np.newaxis]
-	pos[refine_idx] += delta
-	# Combine and save.
-	pos = np.concatenate((pos, pos_new))
-	print pos.shape[0], 'particle positions.'
-	hi_res.create_dataset('Coordinates', data=pos)
+    '''
+    Randomly distribute split particles within smoothing kernel
+    of unsplit particle, then adjust smoothing length accordingly.
+    '''
+    pos = low_res['Coordinates'].value
+    # Duplicate base position for randomizing
+    pos_new = np.repeat(pos[refine_idx], nnew-1, axis=0)
+    # randomize position within smoothing kernel of each particle
+    hsml = low_res['SmoothingLength'].value
+    delta = np.random.rand(refine_idx.size*(nnew-1), 3)
+    delta *=2; delta -=1 #convert random sample from (0,1) to (-1,1)
+    delta = delta * np.repeat(hsml[refine_idx], nnew-1)[:, np.newaxis]
+    pos_new = pos_new + delta
+    # Now, randomize original particle position.
+    delta = np.random.rand(refine_idx.size, 3)
+    delta *=2; delta -=1 #convert random sample from (0,1) to (-1,1)
+    delta = delta * hsml[refine_idx, np.newaxis]
+    pos[refine_idx] += delta
+    # Combine and save.
+    pos = np.concatenate((pos, pos_new))
+    print pos.shape[0], 'particle positions.'
+    hi_res.create_dataset('Coordinates', data=pos)
 
-	# Now shrink smoothing lengths accordingly:
-	hsml[refine_idx] *= nnew**(-1./3.)
-	hsml = np.concatenate((hsml, np.repeat(hsml[refine_idx], nnew-1)))
-	print hsml.size, 'smoothing length entries.'
-	hi_res.create_dataset('SmoothingLength', data=hsml)
+    # Now shrink smoothing lengths accordingly:
+    hsml[refine_idx] *= nnew**(-1./3.)
+    hsml = np.concatenate((hsml, np.repeat(hsml[refine_idx], nnew-1)))
+    print hsml.size, 'smoothing length entries.'
+    hi_res.create_dataset('SmoothingLength', data=hsml)
 
 
 def refine_mass(low_res, hi_res, refine_idx, nnew):
-	'''
-	Spread mass evenly over split particles.
-	'''
-	mass = low_res['Masses'].value
-	print 'Mass before refinement:', mass.sum()
-	mass[refine_idx] /= nnew
-	mass = np.concatenate((mass, np.repeat(mass[refine_idx], nnew-1)))
-	print mass.size, 'particle masses.'
-	print 'Mass after refinement:', mass.sum()
-	hi_res.create_dataset('Masses', data=mass)
+    '''
+    Spread mass evenly over split particles.
+    '''
+    mass = low_res['Masses'].value
+    print 'Mass before refinement:', mass.sum()
+    mass[refine_idx] /= nnew
+    mass = np.concatenate((mass, np.repeat(mass[refine_idx], nnew-1)))
+    print mass.size, 'particle masses.'
+    print 'Mass after refinement:', mass.sum()
+    hi_res.create_dataset('Masses', data=mass)
 
 
 def extend_particleIDs(low_res, hi_res, id_max, npart_new):
-	pid = low_res['ParticleIDs'].value
-	old_max = np.max((pid.max(), id_max))
-	id_new = np.arange(old_max+1, old_max+npart_new+1, dtype=pid.dtype)
-	pid = np.concatenate((pid,id_new))
-	print pid.size, 'particle IDs;', id_new.size, 'new entries.'
-	hi_res.create_dataset('ParticleIDs', data=pid)
+    pid = low_res['ParticleIDs'].value
+    old_max = np.max((pid.max(), id_max))
+    id_new = np.arange(old_max+1, old_max+npart_new+1, dtype=pid.dtype)
+    pid = np.concatenate((pid,id_new))
+    print pid.size, 'particle IDs;', id_new.size, 'new entries.'
+    hi_res.create_dataset('ParticleIDs', data=pid)
 
 
 def extend_field(field, low_res, hi_res, refine_idx, nnew):
-	'''
-	For all other particle properties, just replicate.
-	'''
-	values = low_res[field].value
-	values = np.concatenate((values, np.repeat(values[refine_idx],
-											   nnew-1, axis=0)))
-	hi_res.create_dataset(field, data=values)
+    '''
+    For all other particle properties, just replicate.
+    '''
+    values = low_res[field].value
+    values = np.concatenate((values, np.repeat(values[refine_idx],
+                                               nnew-1, axis=0)))
+    hi_res.create_dataset(field, data=values)
 
 
-def split_particles(low_res, hi_res, header, dmid_max, rsplit, nnew):
-	refine_idx = select_region(low_res, header, rsplit, nnew)
-	# Spread particles over smoothing kernel.
-	distribute_positions(low_res, hi_res, refine_idx, nnew)
-		# Spread mass evenly over split particles.
-	refine_mass(low_res, hi_res, refine_idx, nnew)
-	# Extend ParticleIDs to cover new particles.
-	nnew_ids = refine_idx.size*(nnew-1)
-	extend_particleIDs(low_res, hi_res, dmid_max, nnew_ids)
-	# Extend all other particle fields.
-	all_fields = low_res.keys()
-	special = ['ParticleIDs', 'Masses', 'Coordinates', 'SmoothingLength']
-	others = [x for x in all_fields if x not in special]
-	for field in others:
-		extend_field(field, low_res, hi_res, refine_idx, nnew)
-	#Update particle counts in header.
-	npart_total = header.attrs['NumPart_Total']
-	npart_this_file = header.attrs['NumPart_ThisFile']
-	npart_total[0] += nnew_ids
-	npart_this_file[0] += nnew_ids
-	header.attrs.modify('NumPart_Total', npart_total)
-	header.attrs.modify('NumPart_ThisFile', npart_this_file)
-	
+def split_particles(low_res, hi_res, header, id_max, rsplit, nnew,):
+    refine_idx = select_region(low_res, header, rsplit, nnew)
+    # Spread particles over smoothing kernel.
+    distribute_positions(low_res, hi_res, refine_idx, nnew)
+        # Spread mass evenly over split particles.
+    refine_mass(low_res, hi_res, refine_idx, nnew)
+    # Extend ParticleIDs to cover new particles.
+    nnew_ids = refine_idx.size*(nnew-1)
+    extend_particleIDs(low_res, hi_res, id_max, nnew_ids)
+    # Extend all other particle fields.
+    all_fields = low_res.keys()
+    special = ['ParticleIDs', 'Masses', 'Coordinates', 'SmoothingLength']
+    others = [x for x in all_fields if x not in special]
+    for field in others:
+        extend_field(field, low_res, hi_res, refine_idx, nnew)
+    #Update particle counts in header.
+    npart_total = header.attrs['NumPart_Total']
+    npart_this_file = header.attrs['NumPart_ThisFile']
+    npart_total[0] += nnew_ids
+    npart_this_file[0] += nnew_ids
+    header.attrs.modify('NumPart_Total', npart_total)
+    header.attrs.modify('NumPart_ThisFile', npart_this_file)
 
-def main(infile, outfile, rsplit, nnew):
-	infile = h5py.File(infile, 'r')
-	outfile = h5py.File(outfile, 'w') 
-	# Duplicate header from infile to outfile.
-	header = outfile.create_group('Header')
-	for entry in infile['Header'].attrs.items():
-		header.attrs.create(*entry)
-	# Don't want to split dark matter particles, so simply duplicate the data.
-	infile.copy('PartType1', outfile)
-	dmid_max = infile['PartType1/ParticleIDs'].value.max()
 
-	# Split gas particles
-	old_gas = infile['PartType0']
-	new_gas = outfile.create_group('PartType0')
-	new_gas = split_particles(old_gas, new_gas, header, dmid_max, rsplit, nnew)
-	
-	infile.close()
-	outfile.close()
+def main(infile, outfile, rmax, nnew, refine_style='cutout'):
+    infile = h5py.File(infile, 'r')
+    outfile = h5py.File(outfile, 'w')
+    # Duplicate header from infile to outfile.
+    header = outfile.create_group('Header')
+    for entry in infile['Header'].attrs.items():
+        header.attrs.create(*entry)
+    # Don't want to split dark matter particles, so simply duplicate the data.
+    infile.copy('PartType1', outfile)
+    dmid_max = infile['PartType1/ParticleIDs'].value.max()
+
+    # Split gas particles
+    old_gas = infile['PartType0']
+    new_gas = outfile.create_group('PartType0')
+    new_gas = split_particles(old_gas, new_gas, header, dmid_max, rmax, nnew)
+
+    infile.close()
+    outfile.close()
 
 if __name__ == '__main__':
-	infile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0176.hdf5"
-	outfile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0177.hdf5"
-	#rsplit = 10
-	#nnew = 8
-	main(infile, outfile, 10,8)
+    infile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0176.hdf5"
+    outfile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0177.hdf5"
+    #rmax = 10
+    #nnew = 8
+    main(infile, outfile, 10,8)
