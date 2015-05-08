@@ -1,7 +1,7 @@
-# split_part.py
+# cut-out.py
 # Jacob Hummel
-# created 4/30/15
-# Particle splitting routine for gadget files in the hdf5 format.  
+# created 5/7/15
+# Particle splitting / cut-out routine for gadget files in the hdf5 format.  
 
 import os
 import numpy as np
