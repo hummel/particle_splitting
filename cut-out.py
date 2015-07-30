@@ -58,11 +58,13 @@ def refine_mass(low_res, hi_res, refine_idx, nnew):
     Spread mass evenly over split particles.
     '''
     mass = low_res['Masses'].value
-    print 'Mass before refinement:', mass.sum()
+    print 'Total mass before refinement:', mass.sum()
+    print 'Particle mass before refinement:', mass.min()
     mass[refine_idx] /= nnew
     mass = np.repeat(mass[refine_idx], nnew)
     print mass.size, 'particle masses.'
-    print 'Mass after refinement:', mass.sum()
+    print 'Total mass after refinement:', mass.sum()
+    print 'Particle mass after refinement:', mass.min()
     hi_res.create_dataset('Masses', data=mass)
 
 
@@ -83,10 +85,10 @@ def extend_field(field, low_res, hi_res, refine_idx, nnew):
 
 def split_gas(low_res, hi_res, header, id_max, rmax, nnew):
     refine_idx, center = select_region(low_res, header, rmax)
+    # Spread mass evenly over split particles.
+    refine_mass(low_res, hi_res, refine_idx, nnew)
     # Spread particles over smoothing kernel.
     distribute_gas(low_res, hi_res, refine_idx, nnew)
-        # Spread mass evenly over split particles.
-    refine_mass(low_res, hi_res, refine_idx, nnew)
     # Extend ParticleIDs to cover new particles.
     nnew_ids = refine_idx.size*nnew
     extend_particleIDs(low_res, hi_res, id_max, nnew_ids)
@@ -111,6 +113,9 @@ def slice_dm(low_res, hi_res, header, id_max, rmax, nnew, center):
     return n_dm
 
 def main(infile, outfile, rmax, nnew):
+    print "This is cut-out.py."
+    print "Cutting out inner", rmax, "comoving kpc/h of snapshot."
+    print "Splitting gas particles into", nnew, "daughters."
     infile = h5py.File(infile, 'r')
     outfile = h5py.File(outfile, 'w') 
     # Duplicate header from infile to outfile.
@@ -147,7 +152,5 @@ def main(infile, outfile, rmax, nnew):
 
 if __name__ == '__main__':
     infile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0176.hdf5"
-    outfile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0178.hdf5"
-    #rmax = 10
-    #nnew = 8
-    main(infile, outfile, 10,8)
+    outfile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0177.hdf5"
+    main(infile, outfile, .16,128)
