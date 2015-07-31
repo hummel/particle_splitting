@@ -9,7 +9,7 @@ import h5py
 
 
 
-def select_region(low_res, header, rsplit, nnew):
+def select_region(low_res, header, rmax, nnew):
     pos = low_res['Coordinates']
     dens = low_res['Density']
     time = header.attrs['Time']
@@ -20,8 +20,11 @@ def select_region(low_res, header, rsplit, nnew):
     y = pos[:,1] - center[1]
     z = pos[:,2] - center[2]
     # Calculate distance from center in physical parsecs
-    r = np.sqrt(x*x + y*y + z*z) / hubble
-    to_refine = np.where(r <= rsplit)[0] #indices of particles to refine
+    #r = np.sqrt(x*x + y*y + z*z) / hubble
+    #to_refine = np.where(r <= rsplit)[0] #indices of particles to refine
+    to_refine = np.where((np.abs(x) <= rmax) &
+                         (np.abs(y) <= rmax) &
+                         (np.abs(z) <= rmax))[0]
     print to_refine.size, 'particles to refine.'
     return to_refine
 
@@ -132,8 +135,8 @@ def main(infile, outfile, rmax, nnew):
     outfile.close()
 
 if __name__ == '__main__':
-    infile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0176.hdf5"
-    outfile = os.getenv("HOME")+"/sim/lonestar/vanilla2/snapshot_0177.hdf5"
+    infile = os.getenv("HOME")+"/sim/stampede/halo2/snapshot_0190.hdf5"
+    outfile = os.getenv("HOME")+"/sim/stampede/halo2/snapshot_0191.hdf5"
     #rmax = 10
     #nnew = 8
-    main(infile, outfile, 10,8)
+    main(infile, outfile, 2,8)
