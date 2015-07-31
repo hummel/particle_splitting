@@ -23,9 +23,9 @@ def select_region(low_res, header, rmax, center=None):
     # Calculate distance from center in physical parsecs
     #r = np.sqrt(x*x + y*y + z*z) / hubble
     #to_refine = np.where(r <= rmax)[0] #indices of particles to refine
-    to_refine = np.where((np.abs(x) <= rmax) &
-                         (np.abs(y) <= rmax) &
-                         (np.abs(z) <= rmax))[0]
+    to_refine = np.where((np.abs(x) <= rmax/2) &
+                         (np.abs(y) <= rmax/2) &
+                         (np.abs(z) <= rmax/2))[0]
     print to_refine.size, 'particles to refine.'
     return to_refine, center
 
