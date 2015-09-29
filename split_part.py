@@ -115,13 +115,24 @@ def split_particles(low_res, hi_res, header, id_max, rsplit, nnew,):
     header.attrs.modify('NumPart_ThisFile', npart_this_file)
 
 
-def main(infile, outfile, rmax, nnew):
-    infile = h5py.File(infile, 'r')
-    outfile = h5py.File(outfile, 'w') 
+def main(filein, fileout, rmax, nnew, includeDM=True, physical_units=False):
+    print "This is split_part.py."
+    print "Splitting gas particles into", nnew, "daughters."
+    infile = h5py.File(filein, 'r')
+    outfile = h5py.File(fileout, 'w') 
     # Duplicate header from infile to outfile.
     header = outfile.create_group('Header')
     for entry in infile['Header'].attrs.items():
         header.attrs.create(*entry)
+
+    # Convert from physical units to comoving if desired.
+    if physical_units:
+        print "Splitting inner", rmax, "physical kpc."
+        h = header.attrs['HubbleParam']
+        a = header.attrs['Time']
+        rmax = rmax * h / a
+    print "Splitting inner", rmax, "comoving kpc/h of", filein
+
     # Don't want to split dark matter particles, so simply duplicate the data.
     infile.copy('PartType1', outfile)
     dmid_max = infile['PartType1/ParticleIDs'].value.max()
@@ -133,10 +144,13 @@ def main(infile, outfile, rmax, nnew):
 
     infile.close()
     outfile.close()
+    print '\n\n'
 
 if __name__ == '__main__':
-    infile = os.getenv("HOME")+"/sim/stampede/halo2/snapshot_0190.hdf5"
-    outfile = os.getenv("HOME")+"/sim/stampede/halo2/snapshot_0191.hdf5"
+    infile = os.getenv("HOME")+"/sim/halo2/small/snapshot_0174.hdf5"
+    outfile = os.getenv("HOME")+"/sim/halo2/small/snapshot_0175.hdf5"
+    outfile2 = os.getenv("HOME")+"/sim/halo2/small/snapshot_0176.hdf5"
     #rmax = 10
     #nnew = 8
-    main(infile, outfile, 2,8)
+    main(infile, outfile, 1,8, physical_units=True)
+    main(outfile, outfile2, 1,2, physical_units=True)
