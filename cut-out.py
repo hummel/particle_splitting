@@ -44,7 +44,15 @@ def distribute_gas(low_res, hi_res, refine_idx, nnew, center, rmax):
     delta = delta * np.repeat(hsml[refine_idx], nnew)[:, np.newaxis]
     pos += delta
     print pos.shape[0], 'particle positions.'
-    #pos -= pos.min()
+    pos[:,0] -= pos[:,0].min()
+    pos[:,1] -= pos[:,1].min()
+    pos[:,2] -= pos[:,2].min()
+    print 'Min: ({:.3f} | {:.3f} | {:.3f}) comoving kpc/h'.format(pos[:,0].min(),
+                                                                  pos[:,1].min(),
+                                                                  pos[:,2].min())
+    print 'Max: ({:.3f} | {:.3f} | {:.3f}) comoving kpc/h'.format(pos[:,0].max(),
+                                                                  pos[:,1].max(),
+                                                                  pos[:,2].max())
     hi_res.create_dataset('Coordinates', data=pos)
 
     # Now shrink smoothing lengths accordingly:
@@ -164,6 +172,6 @@ def main(filein, fileout, rmax, nnew, includeDM=True, physical_units=False):
     print '\n\n'
 
 if __name__ == '__main__':
-    infile = os.getenv("HOME")+"/sim/lonestar/halo2_lowres/snapshot_0173.hdf5"
-    outfile = os.getenv("HOME")+"/sim/halo2/small/snapshot_0174.hdf5"
-    main(infile, outfile, .01,8, includeDM=True, physical_units=True)
+    infile = os.getenv("HOME")+"/sim/stampede/halo2_vanilla/snapshot_0144.hdf5"
+    outfile = os.getenv("HOME")+"/sim/stampede/halo2_vanilla/snapshot_0145.hdf5"
+    main(infile, outfile, 10,2, includeDM=True, physical_units=False)

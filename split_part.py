@@ -147,10 +147,10 @@ def main(filein, fileout, rmax, nnew, includeDM=True, physical_units=False):
     print '\n\n'
 
 if __name__ == '__main__':
-    infile = os.getenv("HOME")+"/sim/halo2/small/snapshot_0174.hdf5"
-    outfile = os.getenv("HOME")+"/sim/halo2/small/snapshot_0175.hdf5"
-    outfile2 = os.getenv("HOME")+"/sim/halo2/small/snapshot_0176.hdf5"
+    infile = os.getenv("HOME")+"/sim/stampede/halo2_vanilla/snapshot_0145.hdf5"
+    outfile = os.getenv("HOME")+"/sim/stampede/halo2_vanilla/snapshot_0146.hdf5"
+    outfile2 = os.getenv("HOME")+"/sim/stampede/halo2_vanilla/snapshot_0147.hdf5"
     #rmax = 10
     #nnew = 8
-    main(infile, outfile, 1,8, physical_units=True)
-    main(outfile, outfile2, 1,2, physical_units=True)
+    main(infile, outfile, 8,8, physical_units=False)
+    main(outfile, outfile2,6,8, physical_units=False)
